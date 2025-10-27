@@ -28,6 +28,8 @@ def predict(req: PredictRequest):
     if not req.text or req.text.strip() == "":
         raise HTTPException(status_code=400, detail="Text must not be empty.")
     
+    print(req.text)
+    
     try:
         results = clf(req.text)
         label_scores = sorted(results[0], key=lambda x: x["score"], reverse=True)[:3]
