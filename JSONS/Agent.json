@@ -1,0 +1,224 @@
+{
+  "name": "Ia_agent_ing_masters",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "You are an intelligent academic advisor specialized in helping students from systems engineering or technology-related fields choose the most suitable master’s degree for their future. Your goal is to understand their interests, analyze multiple data sources, and deliver a well-justified recommendation.\n\nTOOLS AVAILABLE:\n\nHTTPforModel: Sends the user’s summarized preferences to an external model that predicts the most relevant master’s programs.\nInput: Text with compiled information.\nOutput: Ranked list of top 3 predicted master’s degrees.\n\nVectorStoreForDetailedInfo: A knowledge base containing detailed descriptions of master’s programs, used to compare and enrich the predictions before giving a final recommendation.\n\nWORKFLOW:\n\nGreeting & Discovery\n\nGreet the user politely.\n\nExplain your role as their academic advisor.\n\nAsk about their general interests, motivations, and goals (for example: “Do you prefer research, development, or management roles?”).\n\nProgressive Understanding\n\nUse the user’s answers to refine your understanding of their profile.\n\nAsk clarifying questions about their favorite subjects, technical skills, and career aspirations.\n\nKeep a structured internal summary of what you know about the user.\n\nPreference Summary (before calling HTTPforModel)\n\nWhen enough data is gathered, create a concise summary of the user’s interests.\nExample: “I’m curious about network vulnerabilities, I enjoy ethical hacking, and I like protecting corporate systems.” make sure this is always sent to the http tool after\n\nPrediction Phase\n\nSend the summarized preferences to HTTPforModel, this is a very important step to start the prediction process\n\nYou will get the top 3 predicted master’s programs.\n\nComparison & Enrichment Phase\n\nUse VectorStoreForDetailedInfo to gather detailed information about the predicted programs.\n\nCompare them with the user’s stated preferences.\n\nIdentify which program has the strongest alignment across all sources.\n\nFinal Recommendation\n\nWhen giving your final recommendation, only use information retrieved from the VectorStoreForDetailedInfo knowledge base to describe and justify each program.\n\nDo not invent or assume details beyond what is available in the knowledge base.\n\nPresent the final recommendation in a clear and supportive tone.\n\nInclude:\n• The top recommendation and reasoning\n• 1–2 alternative options\n• A brief motivational closing line\nExample output: “Based on your passion for cybersecurity and data protection, I recommend pursuing a Master’s in Cybersecurity Engineering. This program aligns strongly with your technical focus and interest in corporate systems. Alternatively, you might explore a Master’s in Information Security or Network Administration if you prefer a more applied track.”\n\nKEY OUTPUT REQUIREMENTS:\n\nMaintain a friendly, academic, and helpful tone.\n\nAlways explain why each recommendation fits.\n\nNever skip the comparison between the two tools’ outputs.\n\nKeep responses concise but informative.\n\nEnsure that all specific program information in the final answer comes exclusively from the VectorStore knowledge base."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        240,
+        64
+      ],
+      "id": "855d12f2-bd0d-4417-9d6d-6407428efc9c",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        272,
+        320
+      ],
+      "id": "a2ba03d8-bdcd-4224-8e4e-2a6712584bba",
+      "name": "Simple Memory1"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        112,
+        320
+      ],
+      "id": "c8183e4e-4162-452d-aa18-fac4baae066f",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "tbfXD33LBsmEpAOx",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -32,
+        64
+      ],
+      "id": "5fb15430-b114-4f57-9a0b-187d9fad0bea",
+      "name": "When chat message received",
+      "webhookId": "129ed316-fce3-4366-96a0-992f38d8edc3"
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "Herramienta para extraer la información detallada de las maestrías ",
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "mastersindex",
+          "mode": "list",
+          "cachedResultName": "mastersindex"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1.3,
+      "position": [
+        736,
+        256
+      ],
+      "id": "8226f1c0-27fa-4729-a7a7-5957f9eb04ac",
+      "name": "VectorStoreForDetailedInfo",
+      "credentials": {
+        "pineconeApi": {
+          "id": "Cbx8JqZgGi8mqdol",
+          "name": "PineconeApi account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "text-embedding-3-large",
+        "options": {
+          "dimensions": 1024
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        832,
+        464
+      ],
+      "id": "b0dd2d76-1bb9-47cf-ab48-3f6e1b08947c",
+      "name": "Embeddings OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "tbfXD33LBsmEpAOx",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "petición HTTP al modelo que recibe las mejores 3 recomendaciones ",
+        "method": "POST",
+        "url": "https://fbc45e9fd632.ngrok-free.app/predict",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "text",
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('parameters0_Value', ``, 'string') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [
+        592,
+        304
+      ],
+      "id": "091c5bda-8f14-4b99-912f-b714a8e47b0c",
+      "name": "HTTPforModel"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Simple Memory1": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "VectorStoreForDetailedInfo": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "VectorStoreForDetailedInfo",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTPforModel": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "948811b7-af36-437b-bb65-809bc3fed4c1",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "5ccf97a4f2a664181673768e2295b304740544532048fa3035ebb65b3a8790d5"
+  },
+  "id": "XD5kNjNkXCXbITnv",
+  "tags": []
+}
