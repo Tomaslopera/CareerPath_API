@@ -17,7 +17,6 @@ class PredictRequest(BaseModel):
 
 class Prediction(BaseModel):
     label: str
-    score: float
 
 class PredictResponse(BaseModel):
     top_3: list[Prediction]
@@ -28,12 +27,12 @@ class PredictResponse(BaseModel):
 def predict(req: PredictRequest):
     if not req.text or req.text.strip() == "":
         raise HTTPException(status_code=400, detail="Text must not be empty.")
-
+    
     try:
         results = clf(req.text)
         label_scores = sorted(results[0], key=lambda x: x["score"], reverse=True)[:3]
 
-        top3 = [Prediction(label=item["label"], score=item["score"]) for item in label_scores]
+        top3 = [Prediction(label=item["label"]) for item in label_scores]
         return PredictResponse(top_3=top3)
 
     except Exception as e:
